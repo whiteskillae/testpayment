@@ -43,7 +43,7 @@ router.post('/create-order', async (req, res) => {
                 customer_phone: '9999999999'
             },
             order_meta: {
-                return_url: `${finalProtocol}://${req.get('host')}/payment-status?order_id={order_id}`,
+                return_url: req.body.returnUrl || `${finalProtocol}://${req.get('host')}/payment-status?order_id={order_id}`,
                 notify_url: 'https://your-webhook-url.com/callback' // Optional: for webhooks
             },
             order_note: `Payment for ${productId}`

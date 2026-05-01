@@ -20,7 +20,11 @@ async function payNow(amount, productId) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ amount, productId })
+            body: JSON.stringify({ 
+                amount, 
+                productId,
+                returnUrl: `${window.location.origin}/payment-status?order_id={order_id}`
+            })
         });
 
         const data = await response.json();
