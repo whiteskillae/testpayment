@@ -24,6 +24,12 @@ router.post('/create-order', async (req, res) => {
         const baseUrl = environment === 'PRODUCTION' 
             ? 'https://api.cashfree.com/pg/orders' 
             : 'https://sandbox.cashfree.com/pg/orders';
+        
+        console.log(`Environment: ${environment}, Host: ${req.get('host')}`);
+
+        // Determine protocol (Vercel uses x-forwarded-proto)
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+        const finalProtocol = (environment === 'PRODUCTION' || req.get('host').includes('vercel.app')) ? 'https' : protocol;
 
         // Order data
         const orderData = {
@@ -37,7 +43,7 @@ router.post('/create-order', async (req, res) => {
                 customer_phone: '9999999999'
             },
             order_meta: {
-                return_url: `${environment === 'PRODUCTION' ? 'https' : req.protocol}://${req.get('host')}/payment-status?order_id={order_id}`,
+                return_url: `${finalProtocol}://${req.get('host')}/payment-status?order_id={order_id}`,
                 notify_url: 'https://your-webhook-url.com/callback' // Optional: for webhooks
             },
             order_note: `Payment for ${productId}`
