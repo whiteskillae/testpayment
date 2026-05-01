@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cashfree Payment Demo</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts for premium feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Cashfree SDK -->
+    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Product Store</h1>
+            <p>Select a product to test Cashfree Payment Elements</p>
+        </header>
+
+        <main class="product-grid">
+            <!-- Product A -->
+            <div class="product-card">
+                <div class="product-image">🎁</div>
+                <h2>Product A</h2>
+                <p class="price">₹1.00</p>
+                <button onclick="payNow(1, 'Product A')" id="btn-product-a">Pay Now</button>
+            </div>
+
+            <!-- Product B -->
+            <div class="product-card">
+                <div class="product-image">🚀</div>
+                <h2>Product B</h2>
+                <p class="price">₹2.00</p>
+                <button onclick="payNow(2, 'Product B')" id="btn-product-b">Pay Now</button>
+            </div>
+        </main>
+
+        <!-- Payment Element Container (Hidden by default) -->
+        <div id="payment-overlay" class="overlay hidden">
+            <div class="payment-modal">
+                <div class="modal-header">
+                    <h3>Complete Payment</h3>
+                    <button class="close-btn" onclick="closeModal()">&times;</button>
+                </div>
+                <div id="payment-element">
+                    <!-- Cashfree will render the payment UI here -->
+                    <div class="loader">Loading payment options...</div>
+                </div>
+                <div class="modal-footer">
+                    <button id="pay-btn" class="pay-btn">Confirm Payment</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Message -->
+        <div id="status-container" class="status-box hidden">
+            <p id="status-message"></p>
+            <button onclick="window.location.reload()">Back to Store</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

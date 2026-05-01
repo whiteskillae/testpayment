@@ -1,0 +1,9 @@
+node_modules/
+.env
+.next/
+dist/
+build/
+*.log
+.DS_Store
+vertex-web/node_modules/
+vertex-web/.next/
