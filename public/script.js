@@ -1,7 +1,7 @@
 // Initialize Cashfree SDK
 // Note: We use 'sandbox' mode for testing. Switch to 'production' for live.
 const cashfree = Cashfree({
-    mode: "sandbox" 
+    mode: "production" 
 });
 
 /**
