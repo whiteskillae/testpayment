@@ -31,6 +31,12 @@ router.post('/create-order', async (req, res) => {
         const protocol = req.headers['x-forwarded-proto'] || req.protocol;
         const finalProtocol = (environment === 'PRODUCTION' || req.get('host').includes('vercel.app')) ? 'https' : protocol;
 
+        // Finalize return_url and ensure HTTPS in production
+        let return_url = req.body.returnUrl || `${finalProtocol}://${req.get('host')}/payment-status?order_id={order_id}`;
+        if (environment === 'PRODUCTION') {
+            return_url = return_url.replace('http://', 'https://');
+        }
+
         // Order data
         const orderData = {
             order_id: `order_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
@@ -43,7 +49,7 @@ router.post('/create-order', async (req, res) => {
                 customer_phone: '9999999999'
             },
             order_meta: {
-                return_url: req.body.returnUrl || `${finalProtocol}://${req.get('host')}/payment-status?order_id={order_id}`,
+                return_url: return_url,
                 notify_url: 'https://your-webhook-url.com/callback' // Optional: for webhooks
             },
             order_note: `Payment for ${productId}`
