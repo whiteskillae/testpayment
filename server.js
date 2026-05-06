@@ -26,7 +26,7 @@ app.post('/api/create-order', async (req, res) => {
 
         // 2. Prepare order data according to v2025-01-01 standards
         const orderRequest = {
-            order_amount: 1.00, // Hardcoded for 1 Rupee test
+            order_amount: 0.2, // Hardcoded for 1 Rupee test
             order_currency: 'AED',
             order_id: `order_${Date.now()}`,
             customer_details: {
