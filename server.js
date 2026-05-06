@@ -1,44 +1,47 @@
 const express = require('express');
-const cors = require('cors');
+const axios = require('axios');
 const dotenv = require('dotenv');
 const path = require('path');
-const axios = require('axios');
 
+// Load API Keys from .env
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+// Middleware to parse JSON bodies and serve static frontend files
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Create Order API - Following v2025-01-01 Reference
+/**
+ * Endpoint to create a Cashfree Order.
+ * Called by the frontend before initiating checkout.
+ */
 app.post('/api/create-order', async (req, res) => {
     try {
-        const environment = process.env.CASHFREE_ENV || 'SANDBOX';
-        const url = environment === 'PRODUCTION' 
+        // 1. Setup Cashfree environment and credentials
+        const isProduction = process.env.CASHFREE_ENV === 'PRODUCTION';
+        const url = isProduction 
             ? 'https://api.cashfree.com/pg/orders' 
             : 'https://sandbox.cashfree.com/pg/orders';
 
-        console.log(`Creating order in ${environment} mode...`);
-
-        const data = {
-            order_amount: 1.00,
-            order_currency: 'INR',
+        // 2. Prepare order data according to v2025-01-01 standards
+        const orderRequest = {
+            order_amount: 1.00, // Hardcoded for 1 Rupee test
+            order_currency: 'AED',
             order_id: `order_${Date.now()}`,
             customer_details: {
-                customer_id: 'devstudio_user',
+                customer_id: 'test_user_123',
                 customer_phone: '9876543210',
-                customer_name: 'Test User',
-                customer_email: 'test@example.com'
+                customer_name: 'Test User'
             },
             order_meta: {
-                // Cashfree PRODUCTION requires HTTPS for return_url. 
-                // Using a placeholder HTTPS URL for testing on localhost.
-                return_url: `https://www.cashfree.com/devstudio/return?order_id={order_id}`
+                // Cashfree PRODUCTION requires an HTTPS return URL
+                return_url: 'https://www.cashfree.com/devstudio/return?order_id={order_id}'
             }
         };
 
-        const response = await axios.post(url, data, {
+        // 3. Make the API request to Cashfree
+        const response = await axios.post(url, orderRequest, {
             headers: {
                 'accept': 'application/json',
                 'x-api-version': '2025-01-01',
@@ -48,38 +51,28 @@ app.post('/api/create-order', async (req, res) => {
             }
         });
 
-        console.log('--- Cashfree API Response ---');
-        console.log(JSON.stringify(response.data, null, 2));
-        
-        // Ensure we are sending back the right field
-        res.json({
-            payment_session_id: response.data.payment_session_id,
-            order_id: response.data.order_id,
-            raw: response.data
-        });
+        // 4. Send the session ID and order details back to the frontend
+        res.json(response.data);
+
     } catch (error) {
-        const errorMsg = error.response ? error.response.data : error.message;
-        console.error('Cashfree Error:', errorMsg);
+        // Detailed error logging for debugging
+        const errorData = error.response ? error.response.data : error.message;
+        console.error('Order Creation Failed:', errorData);
+        
         res.status(500).json({ 
-            error: 'Failed to create order', 
-            details: errorMsg 
+            success: false, 
+            message: 'Internal Server Error',
+            details: errorData 
         });
     }
 });
 
-// Status Page
-app.get('/status', (req, res) => {
-    res.send(`
-        <div style="font-family: sans-serif; text-align: center; padding: 50px;">
-            <h1>Payment Redirected</h1>
-            <p>Order ID: ${req.query.order_id}</p>
-            <p>Please check your dashboard for the final status.</p>
-            <a href="/">Go Back</a>
-        </div>
-    `);
-});
-
+/**
+ * Start the server
+ */
 const PORT = 5000;
 app.listen(PORT, () => {
-    console.log(`Server is running at http://localhost:${PORT}`);
+    console.log(`\n🚀 Cashfree Payment Server Ready`);
+    console.log(`🔗 URL: http://localhost:${PORT}`);
+    console.log(`🛠️  Mode: ${process.env.CASHFREE_ENV || 'SANDBOX'}\n`);
 });

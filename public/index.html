@@ -3,68 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cashfree Checkout</title>
-    <!-- 1. Include SDK -->
+    <title>Cashfree Checkout | Simple Integration</title>
+    
+    <!-- Cashfree SDK (v3 is required for modern Elements and Popup flows) -->
     <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+    
     <style>
-        body { font-family: -apple-system, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f9fafb; }
-        .payment-card { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; max-width: 400px; width: 100%; }
-        h1 { margin-top: 0; color: #111827; }
-        p { color: #6b7280; margin-bottom: 30px; }
-        .pay-button { background-color: #4f46e5; color: white; border: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; transition: background 0.2s; width: 100%; }
-        .pay-button:hover { background-color: #4338ca; }
-        .pay-button:disabled { background-color: #9ca3af; cursor: not-allowed; }
+        body { font-family: -apple-system, sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; width: 350px; }
+        h2 { color: #333; margin-top: 0; }
+        .amount { font-size: 32px; font-weight: bold; color: #4f46e5; margin: 20px 0; }
+        .btn { background: #4f46e5; color: white; border: none; padding: 15px 30px; border-radius: 12px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn:hover { background: #4338ca; transform: translateY(-2px); }
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
-    <div class="payment-card">
-        <h1>Checkout</h1>
-        <p>Testing ₹1.00 payment with Cashfree v2025-01-01</p>
-        <button id="renderBtn" class="pay-button">Pay Now</button>
+    <div class="card">
+        <h2>Order Summary</h2>
+        <p>Testing Payment Gateway</p>
+        <div class="amount">₹1.00</div>
+        <button id="pay-btn" class="btn">Pay Now</button>
     </div>
 
     <script>
-        // 2. Initialize SDK
+        // 1. Initialize Cashfree instance
+        // Change mode to "sandbox" if you are not using production keys
         const cashfree = Cashfree({
-            mode: "production" // Mode is production as per your keys
+            mode: "production" 
         });
 
-        document.getElementById("renderBtn").addEventListener("click", async () => {
-            const btn = document.getElementById("renderBtn");
-            btn.disabled = true;
-            btn.innerText = "Initializing...";
+        const payButton = document.getElementById("pay-btn");
+
+        /**
+         * Main function to handle checkout trigger
+         */
+        payButton.onclick = async () => {
+            // Update UI state
+            payButton.innerText = "Processing...";
+            payButton.disabled = true;
 
             try {
-                // 3. Create Order on Server
-                const response = await fetch("/api/create-order", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" }
-                });
-                
-                const order = await response.json();
-                console.log("Order Response from our Server:", order);
+                // 2. Call your backend to create a Cashfree Order
+                const response = await fetch("/api/create-order", { method: "POST" });
+                const orderData = await response.json();
 
-                const sessionId = order.payment_session_id || (order.raw && order.raw.payment_session_id);
-
-                if (sessionId) {
-                    console.log("Triggering checkout with session:", sessionId);
+                // 3. If session is created successfully, open checkout
+                if (orderData.payment_session_id) {
                     cashfree.checkout({
-                        paymentSessionId: sessionId,
-                        redirectTarget: "_self" 
+                        paymentSessionId: orderData.payment_session_id,
+                        redirectTarget: "_self" // Opens in same window (standard for popup flow)
                     });
                 } else {
-                    console.error("Missing payment_session_id. Full response:", order);
-                    alert("Error: payment_session_id not found in response. Check console.");
+                    console.error("Session creation failed:", orderData);
+                    alert("Error: Check console for order creation failure details.");
                 }
+
             } catch (error) {
-                console.error("Error:", error);
-                alert("An error occurred. Check console.");
+                console.error("Frontend Error:", error);
+                alert("Connection error. Is the server running?");
             } finally {
-                btn.disabled = false;
-                btn.innerText = "Pay Now";
+                // Reset UI state
+                payButton.innerText = "Pay Now";
+                payButton.disabled = false;
             }
-        });
+        };
     </script>
 </body>
 </html>
