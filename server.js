@@ -109,7 +109,7 @@ const getPayoutToken = async () => {
  * Endpoint to initiate withdrawal
  */
 app.post('/api/payout/withdraw', async (req, res) => {
-    const { amount, beneficiaryId, vpa, name, phone } = req.body;
+    const { amount, beneficiaryId, vpa, bankAccount, ifsc, name, phone } = req.body;
 
     // 1. Logic Check: Does user have enough balance?
     if (userWallet < amount) {
@@ -123,18 +123,25 @@ app.post('/api/payout/withdraw', async (req, res) => {
 
         // 2. Add Beneficiary (Standard step before transfer)
         try {
-            await axios.post(`${baseUrl}/payout/v1/addBeneficiary`, {
+            const beneData = {
                 beneId: beneficiaryId || `bene_${Date.now()}`,
                 name: name || 'Test User',
                 email: 'test@example.com',
-                phone: phone || '9999999999',
-                vpa: vpa // UPI ID
-            }, {
+                phone: phone || '9999999999'
+            };
+
+            if (vpa) {
+                beneData.vpa = vpa;
+            } else if (bankAccount && ifsc) {
+                beneData.bankAccount = bankAccount;
+                beneData.ifsc = ifsc;
+            }
+
+            await axios.post(`${baseUrl}/payout/v1/addBeneficiary`, beneData, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             console.log('Beneficiary added/verified');
         } catch (beneErr) {
-            // If beneficiary already exists, we might get an error, which is fine
             console.log('Beneficiary check:', beneErr.response ? beneErr.response.data.message : beneErr.message);
         }
 

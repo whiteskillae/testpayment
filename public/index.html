@@ -9,35 +9,38 @@
     
     <style>
         :root { --primary: #4f46e5; --bg: #f8fafc; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); width: 400px; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .container { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); width: 100%; max-width: 400px; }
         
         .wallet-card { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; padding: 20px; border-radius: 18px; margin-bottom: 25px; text-align: center; }
         .wallet-label { font-size: 14px; opacity: 0.8; }
         .wallet-balance { font-size: 36px; font-weight: 800; margin: 5px 0; }
         
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #eee; padding: 5px; border-radius: 12px; }
-        .tab { flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; background: transparent; transition: 0.3s; }
-        .tab.active { background: white; color: var(--primary); box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #f1f5f9; padding: 5px; border-radius: 12px; }
+        .tab { flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; background: transparent; transition: 0.3s; color: #64748b; }
+        .tab.active { background: white; color: var(--primary); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         
-        .content { display: none; flex-direction: column; gap: 15px; }
+        .content { display: none; flex-direction: column; gap: 12px; }
         .content.active { display: flex; }
         
-        input { padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; outline: none; }
-        input:focus { border-color: var(--primary); }
+        .input-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 12px; font-weight: 600; color: #64748b; margin-left: 5px; }
+        input, select { padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; transition: 0.2s; }
+        input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
         
-        .btn { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.2s; margin-top: 10px; }
         .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-        .btn:disabled { background: #ccc; cursor: not-allowed; }
+        .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
         
-        .status { font-size: 13px; text-align: center; margin-top: 10px; color: #666; }
+        .status { font-size: 12px; text-align: center; margin-top: 10px; color: #94a3b8; }
+        #bank-fields { display: none; flex-direction: column; gap: 12px; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <div class="wallet-card">
-            <div class="wallet-label">Current Balance</div>
+            <div class="wallet-label">Wallet Balance</div>
             <div id="balance" class="wallet-balance">₹0.00</div>
         </div>
 
@@ -48,25 +51,58 @@
 
         <!-- Deposit Section -->
         <div id="deposit" class="content active">
-            <input type="number" id="dep-amount" placeholder="Enter amount (e.g. 100)" value="1">
-            <button id="dep-btn" class="btn" onclick="handleDeposit()">Deposit via Cashfree</button>
-            <p class="status">Money will be added to your wallet after payment.</p>
+            <div class="input-group">
+                <label>Amount to Deposit (₹)</label>
+                <input type="number" id="dep-amount" placeholder="Enter amount" value="1">
+            </div>
+            <button id="dep-btn" class="btn" onclick="handleDeposit()">Add Money</button>
+            <p class="status">Simulated payment confirmation in 3s (Sandbox)</p>
         </div>
 
         <!-- Withdraw Section -->
         <div id="withdraw" class="content">
-            <input type="number" id="wit-amount" placeholder="Amount to withdraw">
-            <input type="text" id="wit-vpa" placeholder="UPI ID (e.g. test@upi)">
-            <input type="text" id="wit-name" placeholder="Account Holder Name">
-            <button id="wit-btn" class="btn" onclick="handleWithdraw()">Withdraw Now</button>
-            <p class="status">Payouts will be processed instantly (Sandbox).</p>
+            <div class="input-group">
+                <label>Withdraw Amount (₹)</label>
+                <input type="number" id="wit-amount" placeholder="Enter amount">
+            </div>
+            
+            <div class="input-group">
+                <label>Payout Method</label>
+                <select id="payout-method" onchange="togglePayoutFields()">
+                    <option value="vpa">UPI (VPA)</option>
+                    <option value="bank">Bank Transfer</option>
+                </select>
+            </div>
+
+            <div class="input-group" id="upi-fields">
+                <label>UPI ID</label>
+                <input type="text" id="wit-vpa" placeholder="example@upi">
+            </div>
+
+            <div id="bank-fields">
+                <div class="input-group">
+                    <label>Account Number</label>
+                    <input type="text" id="wit-acc" placeholder="Enter Account Number">
+                </div>
+                <div class="input-group">
+                    <label>IFSC Code</label>
+                    <input type="text" id="wit-ifsc" placeholder="HDFC0001234">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Beneficiary Name</label>
+                <input type="text" id="wit-name" placeholder="Full Name">
+            </div>
+
+            <button id="wit-btn" class="btn" onclick="handleWithdraw()">Initiate Withdrawal</button>
+            <p class="status">Withdrawals are processed via Cashfree Payouts</p>
         </div>
     </div>
 
     <script>
-        const cashfree = Cashfree({ mode: "sandbox" }); // Force sandbox for learning
+        const cashfree = Cashfree({ mode: "sandbox" });
 
-        // Initialize Balance
         async function updateBalance() {
             const res = await fetch('/api/wallet-balance');
             const data = await res.json();
@@ -81,11 +117,19 @@
             event.target.classList.add('active');
         }
 
+        function togglePayoutFields() {
+            const method = document.getElementById('payout-method').value;
+            document.getElementById('upi-fields').style.display = method === 'vpa' ? 'flex' : 'none';
+            document.getElementById('bank-fields').style.display = method === 'bank' ? 'flex' : 'none';
+        }
+
         async function handleDeposit() {
             const btn = document.getElementById('dep-btn');
             const amount = document.getElementById('dep-amount').value;
+            if (!amount || amount <= 0) return alert("Enter valid amount");
+
             btn.disabled = true;
-            btn.innerText = "Initializing...";
+            btn.innerText = "Processing...";
 
             try {
                 const response = await fetch("/api/create-order", { 
@@ -101,9 +145,6 @@
                         redirectTarget: "_self"
                     });
                     
-                    // SIMULATION: Since we can't do real webhooks on localhost easily, 
-                    // we will wait 2 seconds and then "confirm" the payment for testing purposes.
-                    // In real life, Cashfree would call our webhook.
                     setTimeout(async () => {
                         await fetch('/api/test/confirm-payment', {
                             method: 'POST',
@@ -112,40 +153,50 @@
                         });
                         updateBalance();
                     }, 3000);
-
                 }
-            } catch (e) { alert("Error starting payment"); }
-            finally { btn.disabled = false; btn.innerText = "Deposit via Cashfree"; }
+            } catch (e) { alert("Payment initiation failed"); }
+            finally { btn.disabled = false; btn.innerText = "Add Money"; }
         }
 
         async function handleWithdraw() {
             const btn = document.getElementById('wit-btn');
             const amount = document.getElementById('wit-amount').value;
+            const method = document.getElementById('payout-method').value;
             const vpa = document.getElementById('wit-vpa').value;
+            const acc = document.getElementById('wit-acc').value;
+            const ifsc = document.getElementById('wit-ifsc').value;
             const name = document.getElementById('wit-name').value;
 
-            if(!amount || !vpa) return alert("Please fill amount and UPI ID");
+            if(!amount || amount <= 0) return alert("Enter valid withdrawal amount");
+            if(method === 'vpa' && !vpa) return alert("Enter UPI ID");
+            if(method === 'bank' && (!acc || !ifsc)) return alert("Enter Bank details");
+            if(!name) return alert("Enter Beneficiary Name");
 
             btn.disabled = true;
-            btn.innerText = "Processing...";
+            btn.innerText = "Sending Request...";
 
             try {
                 const response = await fetch("/api/payout/withdraw", {
                     method: "POST",
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount, vpa, name })
+                    body: JSON.stringify({ 
+                        amount, 
+                        vpa: method === 'vpa' ? vpa : undefined,
+                        bankAccount: method === 'bank' ? acc : undefined,
+                        ifsc: method === 'bank' ? ifsc : undefined,
+                        name 
+                    })
                 });
                 const result = await response.json();
 
                 if (result.success) {
-                    alert("Withdrawal Successful!");
+                    alert("Success! Payout ID: " + result.data.data.transferId);
                     updateBalance();
                 } else {
                     alert("Error: " + (result.message || "Withdrawal failed"));
-                    console.error(result.details);
                 }
-            } catch (e) { alert("Withdrawal system error"); }
-            finally { btn.disabled = false; btn.innerText = "Withdraw Now"; }
+            } catch (e) { alert("Withdrawal system connection error"); }
+            finally { btn.disabled = false; btn.innerText = "Initiate Withdrawal"; }
         }
     </script>
 </body>
