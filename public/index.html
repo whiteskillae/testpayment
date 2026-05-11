@@ -3,72 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cashfree Checkout | Simple Integration</title>
+    <title>Cashfree | Wallet & Payouts</title>
     
-    <!-- Cashfree SDK (v3 is required for modern Elements and Popup flows) -->
     <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
     
     <style>
-        body { font-family: -apple-system, sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; width: 350px; }
-        h2 { color: #333; margin-top: 0; }
-        .amount { font-size: 32px; font-weight: bold; color: #4f46e5; margin: 20px 0; }
-        .btn { background: #4f46e5; color: white; border: none; padding: 15px 30px; border-radius: 12px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        .btn:hover { background: #4338ca; transform: translateY(-2px); }
+        :root { --primary: #4f46e5; --bg: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); width: 400px; }
+        
+        .wallet-card { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; padding: 20px; border-radius: 18px; margin-bottom: 25px; text-align: center; }
+        .wallet-label { font-size: 14px; opacity: 0.8; }
+        .wallet-balance { font-size: 36px; font-weight: 800; margin: 5px 0; }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #eee; padding: 5px; border-radius: 12px; }
+        .tab { flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; background: transparent; transition: 0.3s; }
+        .tab.active { background: white; color: var(--primary); box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        
+        .content { display: none; flex-direction: column; gap: 15px; }
+        .content.active { display: flex; }
+        
+        input { padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; outline: none; }
+        input:focus { border-color: var(--primary); }
+        
+        .btn { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
         .btn:disabled { background: #ccc; cursor: not-allowed; }
+        
+        .status { font-size: 13px; text-align: center; margin-top: 10px; color: #666; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2>Order Summary</h2>
-        <p>Testing Payment Gateway</p>
-        <div class="amount">0.08 AED</div>
-        <button id="pay-btn" class="btn">Pay Now</button>
+    <div class="container">
+        <div class="wallet-card">
+            <div class="wallet-label">Current Balance</div>
+            <div id="balance" class="wallet-balance">₹0.00</div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('deposit')">Deposit</button>
+            <button class="tab" onclick="showTab('withdraw')">Withdraw</button>
+        </div>
+
+        <!-- Deposit Section -->
+        <div id="deposit" class="content active">
+            <input type="number" id="dep-amount" placeholder="Enter amount (e.g. 100)" value="1">
+            <button id="dep-btn" class="btn" onclick="handleDeposit()">Deposit via Cashfree</button>
+            <p class="status">Money will be added to your wallet after payment.</p>
+        </div>
+
+        <!-- Withdraw Section -->
+        <div id="withdraw" class="content">
+            <input type="number" id="wit-amount" placeholder="Amount to withdraw">
+            <input type="text" id="wit-vpa" placeholder="UPI ID (e.g. test@upi)">
+            <input type="text" id="wit-name" placeholder="Account Holder Name">
+            <button id="wit-btn" class="btn" onclick="handleWithdraw()">Withdraw Now</button>
+            <p class="status">Payouts will be processed instantly (Sandbox).</p>
+        </div>
     </div>
 
     <script>
-        // 1. Initialize Cashfree instance
-        // Change mode to "sandbox" if you are not using production keys
-        const cashfree = Cashfree({
-            mode: "production" 
-        });
+        const cashfree = Cashfree({ mode: "sandbox" }); // Force sandbox for learning
 
-        const payButton = document.getElementById("pay-btn");
+        // Initialize Balance
+        async function updateBalance() {
+            const res = await fetch('/api/wallet-balance');
+            const data = await res.json();
+            document.getElementById('balance').innerText = `₹${data.balance.toFixed(2)}`;
+        }
+        updateBalance();
 
-        /**
-         * Main function to handle checkout trigger
-         */
-        payButton.onclick = async () => {
-            // Update UI state
-            payButton.innerText = "Processing...";
-            payButton.disabled = true;
+        function showTab(tabId) {
+            document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        async function handleDeposit() {
+            const btn = document.getElementById('dep-btn');
+            const amount = document.getElementById('dep-amount').value;
+            btn.disabled = true;
+            btn.innerText = "Initializing...";
 
             try {
-                // 2. Call your backend to create a Cashfree Order
-                const response = await fetch("/api/create-order", { method: "POST" });
+                const response = await fetch("/api/create-order", { 
+                    method: "POST",
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount })
+                });
                 const orderData = await response.json();
 
-                // 3. If session is created successfully, open checkout
                 if (orderData.payment_session_id) {
                     cashfree.checkout({
                         paymentSessionId: orderData.payment_session_id,
-                        redirectTarget: "_self" // Opens in same window (standard for popup flow)
+                        redirectTarget: "_self"
                     });
-                } else {
-                    console.error("Session creation failed:", orderData);
-                    alert("Error: Check console for order creation failure details.");
-                }
+                    
+                    // SIMULATION: Since we can't do real webhooks on localhost easily, 
+                    // we will wait 2 seconds and then "confirm" the payment for testing purposes.
+                    // In real life, Cashfree would call our webhook.
+                    setTimeout(async () => {
+                        await fetch('/api/test/confirm-payment', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ amount })
+                        });
+                        updateBalance();
+                    }, 3000);
 
-            } catch (error) {
-                console.error("Frontend Error:", error);
-                alert("Connection error. Is the server running?");
-            } finally {
-                // Reset UI state
-                payButton.innerText = "Pay Now";
-                payButton.disabled = false;
-            }
-        };
+                }
+            } catch (e) { alert("Error starting payment"); }
+            finally { btn.disabled = false; btn.innerText = "Deposit via Cashfree"; }
+        }
+
+        async function handleWithdraw() {
+            const btn = document.getElementById('wit-btn');
+            const amount = document.getElementById('wit-amount').value;
+            const vpa = document.getElementById('wit-vpa').value;
+            const name = document.getElementById('wit-name').value;
+
+            if(!amount || !vpa) return alert("Please fill amount and UPI ID");
+
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+
+            try {
+                const response = await fetch("/api/payout/withdraw", {
+                    method: "POST",
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount, vpa, name })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    alert("Withdrawal Successful!");
+                    updateBalance();
+                } else {
+                    alert("Error: " + (result.message || "Withdrawal failed"));
+                    console.error(result.details);
+                }
+            } catch (e) { alert("Withdrawal system error"); }
+            finally { btn.disabled = false; btn.innerText = "Withdraw Now"; }
+        }
     </script>
 </body>
 </html>
